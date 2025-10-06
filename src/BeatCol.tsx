@@ -6,6 +6,7 @@ type BeatProps = {
   running: boolean;
   keyChar: string;
   metronomeEnabled: boolean;
+  blindMode: boolean;
 };
 
 const perfect = 25;
@@ -47,6 +48,7 @@ export function BeatCol({
   running,
   keyChar,
   metronomeEnabled,
+  blindMode,
 }: BeatProps) {
   const [elements, setElements] = useState<number[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -168,12 +170,16 @@ export function BeatCol({
         </div>
       </div>
 
-      <div className="w-8 h-full bg-gray-200 relative overflow-hidden">
+      <div
+        className={`w-8 h-full bg-gray-200 relative overflow-hidden ${
+          blindMode && running ? "blind-mode" : ""
+        }`}
+        style={{ "--duration": `${reactionTime}ms` } as React.CSSProperties}
+      >
         {elements.map((el) => (
           <div
             key={el}
             className={`absolute left-1/2 -translate-x-1/2 w-6 h-6 rounded-full mb-2 animate-top-to-bottom bg-blue-500`}
-            style={{ "--duration": `${reactionTime}ms` } as React.CSSProperties}
           ></div>
         ))}
       </div>

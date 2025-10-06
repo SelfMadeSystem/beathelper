@@ -12,3 +12,8 @@
     top: 100%;
   }
 }
+
+.blind-mode {
+  transition: opacity 0.5s calc(var(--duration) * 3 - 0.5s) ease-in-out;
+  opacity: 0;
+}

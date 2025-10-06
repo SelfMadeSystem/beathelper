@@ -11,6 +11,7 @@ const DEFAULT_CONFIG = {
   configs: [{ keyChar: "A", bpm: 120 }],
   reactionTime: 1000,
   metronomeEnabled: false,
+  blindMode: false,
 };
 
 // Load config from localStorage
@@ -27,6 +28,7 @@ const loadConfig = () => {
           parsed.metronomeEnabled !== undefined
             ? parsed.metronomeEnabled
             : DEFAULT_CONFIG.metronomeEnabled,
+        blindMode: parsed.blindMode || DEFAULT_CONFIG.blindMode,
       };
     }
   } catch (error) {
@@ -40,12 +42,19 @@ const saveConfig = (
   cols: number,
   configs: ColConfig[],
   reactionTime: number,
-  metronomeEnabled: boolean
+  metronomeEnabled: boolean,
+  blindMode: boolean
 ) => {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ cols, configs, reactionTime, metronomeEnabled })
+      JSON.stringify({
+        cols,
+        configs,
+        reactionTime,
+        metronomeEnabled,
+        blindMode,
+      })
     );
   } catch (error) {
     console.error("Failed to save config to localStorage:", error);
@@ -63,11 +72,12 @@ export function App() {
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(
     initialConfig.metronomeEnabled
   );
+  const [blindMode, setBlindMode] = useState<boolean>(initialConfig.blindMode);
 
   // Save to localStorage whenever config changes
   useEffect(() => {
-    saveConfig(cols, configs, reactionTime, metronomeEnabled);
-  }, [cols, configs, reactionTime, metronomeEnabled]);
+    saveConfig(cols, configs, reactionTime, metronomeEnabled, blindMode);
+  }, [cols, configs, reactionTime, metronomeEnabled, blindMode]);
 
   // keep configs length in sync with cols (1..4)
   useEffect(() => {
@@ -106,29 +116,41 @@ export function App() {
       <div className="w-full max-w-4xl">
         {!running && (
           <div className="bg-slate-800 p-4 rounded mb-4">
-            <div className="flex items-center gap-4 mb-3">
-              <label className="text-sm ml-4">Reaction time (ms)</label>
-              <input
-                className="bg-slate-700 text-white p-1 rounded w-28"
-                type="number"
-                min={50}
-                max={5000}
-                step={10}
-                value={reactionTime}
-                onChange={(e) => setReactionTime(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="flex items-center gap-4 mb-3">
-              <label className="text-sm ml-4 flex items-center gap-2 cursor-pointer">
+            <div className="flex flex-row">
+              <div className="flex items-center gap-4 mb-3">
+                <label className="text-sm ml-4">Reaction time (ms)</label>
                 <input
-                  type="checkbox"
-                  className="w-4 h-4 cursor-pointer"
-                  checked={metronomeEnabled}
-                  onChange={(e) => setMetronomeEnabled(e.target.checked)}
+                  className="bg-slate-700 text-white p-1 rounded w-28"
+                  type="number"
+                  min={50}
+                  max={5000}
+                  step={10}
+                  value={reactionTime}
+                  onChange={(e) => setReactionTime(Number(e.target.value))}
                 />
-                Enable metronome tick sound
-              </label>
+              </div>
+              <div className="flex items-center gap-4 mb-3">
+                <label className="text-sm ml-4 flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 cursor-pointer"
+                    checked={metronomeEnabled}
+                    onChange={(e) => setMetronomeEnabled(e.target.checked)}
+                  />
+                  Enable metronome tick sound
+                </label>
+              </div>
+              <div className="flex items-center gap-4 mb-3">
+                <label className="text-sm ml-4 flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 cursor-pointer"
+                    checked={blindMode}
+                    onChange={(e) => setBlindMode(e.target.checked)}
+                  />
+                  Blind mode
+                </label>
+              </div>
             </div>
 
             <div className="flex flex-row flex-wrap gap-3">
@@ -203,6 +225,7 @@ export function App() {
                   setConfigs(DEFAULT_CONFIG.configs);
                   setReactionTime(DEFAULT_CONFIG.reactionTime);
                   setMetronomeEnabled(DEFAULT_CONFIG.metronomeEnabled);
+                  setBlindMode(DEFAULT_CONFIG.blindMode);
                 }}
               >
                 Reset
@@ -233,6 +256,7 @@ export function App() {
               running={running}
               keyChar={cfg.keyChar || "A"}
               metronomeEnabled={metronomeEnabled}
+              blindMode={blindMode}
             />
           ))}
         </div>
