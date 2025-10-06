@@ -51,7 +51,6 @@ export function BeatCol({
   blindMode,
 }: BeatProps) {
   const [elements, setElements] = useState<number[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [totalPresses, setTotalPresses] = useState(0);
   const [successfulHits, setSuccessfulHits] = useState(0);
   const [lastOffset, setLastOffset] = useState<number | null>(null);
@@ -71,6 +70,7 @@ export function BeatCol({
       setLastResult(null);
 
       const interval = (60 / bpm) * 1000;
+      const timeouts: NodeJS.Timeout[] = [];
 
       const tick = () => {
         const now = Date.now();
@@ -78,33 +78,32 @@ export function BeatCol({
 
         // Play the metronome sound when the beat should be hit
         if (metronomeEnabled) {
-          setTimeout(() => {
+          const metronomeTimeout = setTimeout(() => {
             try {
               createTickSound();
             } catch (error) {
               console.error("Failed to play metronome sound:", error);
             }
           }, reactionTime);
+          timeouts.push(metronomeTimeout);
         }
 
-        setTimeout(() => {
+        const cleanupTimeout = setTimeout(() => {
           setElements((els) => els.filter((el) => el !== now));
         }, reactionTime * 1.5);
+        timeouts.push(cleanupTimeout);
       };
 
-      intervalRef.current = setInterval(tick, interval);
+      const cl = setInterval(tick, interval);
       tick();
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+
+      return () => {
+        clearInterval(cl);
+        timeouts.forEach((timeout) => clearTimeout(timeout));
+      };
+    } else {
       setElements([]);
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
   }, [bpm, running, reactionTime, metronomeEnabled]);
 
   useEffect(() => {
