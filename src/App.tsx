@@ -4,13 +4,70 @@ import "./index.css";
 
 type ColConfig = { keyChar: string; bpm: number };
 
+const STORAGE_KEY = "beathelper-config";
+
+const DEFAULT_CONFIG = {
+  cols: 1,
+  configs: [{ keyChar: "A", bpm: 120 }],
+  reactionTime: 1000,
+  metronomeEnabled: false,
+};
+
+// Load config from localStorage
+const loadConfig = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        cols: parsed.cols || DEFAULT_CONFIG.cols,
+        configs: parsed.configs || DEFAULT_CONFIG.configs,
+        reactionTime: parsed.reactionTime || DEFAULT_CONFIG.reactionTime,
+        metronomeEnabled:
+          parsed.metronomeEnabled !== undefined
+            ? parsed.metronomeEnabled
+            : DEFAULT_CONFIG.metronomeEnabled,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to load config from localStorage:", error);
+  }
+  return DEFAULT_CONFIG;
+};
+
+// Save config to localStorage
+const saveConfig = (
+  cols: number,
+  configs: ColConfig[],
+  reactionTime: number,
+  metronomeEnabled: boolean
+) => {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ cols, configs, reactionTime, metronomeEnabled })
+    );
+  } catch (error) {
+    console.error("Failed to save config to localStorage:", error);
+  }
+};
+
 export function App() {
-  const [cols, setCols] = useState<number>(1); // 1 to 4
-  const [configs, setConfigs] = useState<ColConfig[]>([
-    { keyChar: "A", bpm: 120 },
-  ]);
-  const [reactionTime, setReactionTime] = useState<number>(1000);
+  const initialConfig = loadConfig();
+  const [cols, setCols] = useState<number>(initialConfig.cols);
+  const [configs, setConfigs] = useState<ColConfig[]>(initialConfig.configs);
+  const [reactionTime, setReactionTime] = useState<number>(
+    initialConfig.reactionTime
+  );
   const [running, setRunning] = useState<boolean>(false);
+  const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(
+    initialConfig.metronomeEnabled
+  );
+
+  // Save to localStorage whenever config changes
+  useEffect(() => {
+    saveConfig(cols, configs, reactionTime, metronomeEnabled);
+  }, [cols, configs, reactionTime, metronomeEnabled]);
 
   // keep configs length in sync with cols (1..4)
   useEffect(() => {
@@ -60,6 +117,18 @@ export function App() {
                 value={reactionTime}
                 onChange={(e) => setReactionTime(Number(e.target.value))}
               />
+            </div>
+
+            <div className="flex items-center gap-4 mb-3">
+              <label className="text-sm ml-4 flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 cursor-pointer"
+                  checked={metronomeEnabled}
+                  onChange={(e) => setMetronomeEnabled(e.target.checked)}
+                />
+                Enable metronome tick sound
+              </label>
             </div>
 
             <div className="flex flex-row flex-wrap gap-3">
@@ -130,9 +199,10 @@ export function App() {
               <button
                 className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded"
                 onClick={() => {
-                  setConfigs([{ keyChar: "A", bpm: 120 }]);
-                  setCols(1);
-                  setReactionTime(1000);
+                  setCols(DEFAULT_CONFIG.cols);
+                  setConfigs(DEFAULT_CONFIG.configs);
+                  setReactionTime(DEFAULT_CONFIG.reactionTime);
+                  setMetronomeEnabled(DEFAULT_CONFIG.metronomeEnabled);
                 }}
               >
                 Reset
@@ -162,6 +232,7 @@ export function App() {
               reactionTime={reactionTime}
               running={running}
               keyChar={cfg.keyChar || "A"}
+              metronomeEnabled={metronomeEnabled}
             />
           ))}
         </div>

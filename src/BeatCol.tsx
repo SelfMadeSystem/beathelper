@@ -5,12 +5,49 @@ type BeatProps = {
   reactionTime: number;
   running: boolean;
   keyChar: string;
+  metronomeEnabled: boolean;
 };
 
 const perfect = 25;
 const good = 100;
 
-export function BeatCol({ bpm, reactionTime, running, keyChar }: BeatProps) {
+// Create a shared audio context to avoid recreating it on every tick
+let audioContext: AudioContext | null = null;
+
+const getAudioContext = () => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
+  }
+  return audioContext;
+};
+
+// Create a simple metronome tick sound using Web Audio API
+const createTickSound = () => {
+  const ctx = getAudioContext();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  oscillator.frequency.value = 1000; // 1kHz tone
+  oscillator.type = "sine";
+
+  gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.05);
+};
+
+export function BeatCol({
+  bpm,
+  reactionTime,
+  running,
+  keyChar,
+  metronomeEnabled,
+}: BeatProps) {
   const [elements, setElements] = useState<number[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [totalPresses, setTotalPresses] = useState(0);
@@ -34,9 +71,22 @@ export function BeatCol({ bpm, reactionTime, running, keyChar }: BeatProps) {
       const interval = (60 / bpm) * 1000;
 
       const tick = () => {
-        setElements((els) => [...els, Date.now()]);
+        const now = Date.now();
+        setElements((els) => [...els, now]);
+
+        // Play the metronome sound when the beat should be hit
+        if (metronomeEnabled) {
+          setTimeout(() => {
+            try {
+              createTickSound();
+            } catch (error) {
+              console.error("Failed to play metronome sound:", error);
+            }
+          }, reactionTime);
+        }
+
         setTimeout(() => {
-          setElements((els) => els.slice(1));
+          setElements((els) => els.filter((el) => el !== now));
         }, reactionTime * 1.5);
       };
 
@@ -53,9 +103,11 @@ export function BeatCol({ bpm, reactionTime, running, keyChar }: BeatProps) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [bpm, running, reactionTime]);
+  }, [bpm, running, reactionTime, metronomeEnabled]);
 
   useEffect(() => {
+    if (!running) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === keyChar.toLowerCase()) {
         setTotalPresses((tp) => tp + 1);
@@ -94,10 +146,10 @@ export function BeatCol({ bpm, reactionTime, running, keyChar }: BeatProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [keyChar, reactionTime, elements]);
+  }, [keyChar, reactionTime, elements, running]);
 
   return (
-    <div className="flex flex-col items-center text-center w-24">
+    <div className="flex flex-col items-center text-center w-24 *:text-nowrap">
       <div className="text-xs mb-1">
         <div>
           Key: <span className="font-semibold">{keyChar}</span>
