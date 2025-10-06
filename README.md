@@ -1,21 +1,13 @@
-# bun-react-tailwind-template
+# Beat Helper
 
-To install dependencies:
+A simple web app to help you practice your rhythm game skills. It displays falling circles in one or more columns, each associated with a specific key and BPM (beats per minute). Your goal is to press the corresponding key as the circles reach the bottom of the column, testing your timing and accuracy.
 
-```bash
-bun install
-```
+Built with React and TypeScript, and bundled with [Bun](https://bun.sh).
 
-To start a development server:
+## Live Demo
 
-```bash
-bun dev
-```
+https://beat-helper.shoghisimon.ca/
 
-To run for production:
+## License
 
-```bash
-bun start
-```
-
-This project was created using `bun init` in bun v1.2.23. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+MIT License. See [LICENSE](./LICENSE) for details.
